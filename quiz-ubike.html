@@ -29,7 +29,11 @@
       <tr>
         <th>#</th>
         <th>場站名稱</th>
-        <th>場站區域</th>
+        <th class="area-select">
+          <select class="area-select-el">
+            <option>場站區域</option>
+        </select>
+        </th>
         <th>目前可用車輛</th>
         <th>總停車格</th>
         <th>資料更新時間</th>
@@ -135,24 +139,58 @@
         // 將回傳值轉為陣列
         stops = Object.keys(retVal).map(key => retVal[key]);
         // 從 opendata 拿回來的資料在這裡
-
-        print();
+        areaSelect()
+        printList();
       });
     }
-    
-    
-    function print(text){
+    //印出『場站區域』的下拉選單
+    function areaSelect(){
+      const area = []
+      let str = '<option>場站區域</option>'
+      stops.forEach(function(item){
+        if(!area[item.sarea]){
+          area.push(item.sarea)
+        }
+      })
+      //去除重複的值
+      const oneArea = area.filter(function(item, index){
+        return area.indexOf(item) === index
+      })
+      oneArea.forEach(function(item){
+        str+=`<option>${item}</option>`
+      })
+      $('.area-select-el').append(str)
+    }
+    //點選『場站區域』的下拉選單後，印出相對應的列表內容
+    function selectAreaPrint(select){
+      $('tbody').html('')
+      let str = ''
+      const selectArea = stops.filter(function(item){
+        return item.sarea === select
+      })
+      selectArea.forEach(function(item){
+        str+= `<tr>
+          <td>${item.sno}</td>
+          <td>${item.sna}</td>
+          <td>${item.sarea}</td>
+          <td>${item.bemp}</td>
+          <td>${item.tot}</td>
+          <td>${timeFormat(item.mday)}</td>
+        </tr>`
+      })
+      $('tbody').append(str)
+    }
+    //印出列表
+    function printList(text){
       let str = '';
       let newData = []
-      console.log(text)
       if(!text){
         newData = stops
       } else {
         console.log('filter')
         newData = stops.filter(function(item){
-        return item.sna === text
+        return item.sna.match(text) 
       })
-      console.log(newData)
       }
       newData.forEach(function(item){
         str+=` <tr>
@@ -166,12 +204,18 @@
       })
       $('tbody').append(str)
     }
+    //搜尋功能
     $('#search-btn').on('click',function(e){
       const searchText = $('#stop-search').val()
       $('tbody').html('')
-      print(searchText)
-      //console.log($('#stop-search').val())
+      printList(searchText)
     })
+    //篩選功能
+    $('.area-select').on('change',function(e){
+      const selectVal = $(e.target).val()
+      selectAreaPrint(selectVal)
+    })
+    
 
   </script>
 
