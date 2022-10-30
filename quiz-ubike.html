@@ -140,10 +140,21 @@
       });
     }
     
-    function print(){
+    
+    function print(text){
       let str = '';
-      stops.forEach(function(item){
-        console.log(item)
+      let newData = []
+      console.log(text)
+      if(!text){
+        newData = stops
+      } else {
+        console.log('filter')
+        newData = stops.filter(function(item){
+        return item.sna === text
+      })
+      console.log(newData)
+      }
+      newData.forEach(function(item){
         str+=` <tr>
           <td>${item.sno}</td>
           <td>${item.sna}</td>
@@ -155,6 +166,12 @@
       })
       $('tbody').append(str)
     }
+    $('#search-btn').on('click',function(e){
+      const searchText = $('#stop-search').val()
+      $('tbody').html('')
+      print(searchText)
+      //console.log($('#stop-search').val())
+    })
 
   </script>
 
