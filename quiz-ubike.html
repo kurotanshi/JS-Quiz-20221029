@@ -38,7 +38,7 @@
     
     <!-- 以下內容為示意用途，請替換掉表格資訊 -->
     <tbody>
-      <tr>
+      <!-- <tr>
         <td>0001</td>
         <td>捷運市政府站(3號出口)</td>
         <td>信義區</td>
@@ -77,7 +77,7 @@
         <td>31</td>
         <td>60</td>
         <td>2022/10/29 12:00:00</td>
-      </tr>
+      </tr> -->
     </tbody>
 
   </table>
@@ -125,17 +125,36 @@
       time.push(t.substr(12, 2));
       return date.join("/") + ' ' + time.join(":");
     }
-
-    $.get('https://tcgbusfs.blob.core.windows.net/blobyoubike/YouBikeTP.gz',
+    init();
+    let stops = []
+    function init(){
+      $.get('https://tcgbusfs.blob.core.windows.net/blobyoubike/YouBikeTP.gz',
       function (data) {        
         // 將資料轉為 JSON
         const { retVal } = JSON.parse(data);
         // 將回傳值轉為陣列
-        const stops = Object.keys(retVal).map(key => retVal[key]);
-
+        stops = Object.keys(retVal).map(key => retVal[key]);
         // 從 opendata 拿回來的資料在這裡
-        console.log(stops);
+
+        print();
       });
+    }
+    
+    let str = '';
+    function print(){
+      stops.forEach(function(item){
+        console.log(item)
+        str+=` <tr>
+          <td>${item.sno}</td>
+          <td>${item.sna}</td>
+          <td>${item.sarea}</td>
+          <td>${item.bemp}</td>
+          <td>${item.tot}</td>
+          <td>${timeFormat(item.mday)}</td>
+        </tr>`
+      })
+      $('tbody').append(str)
+    }
 
   </script>
 
