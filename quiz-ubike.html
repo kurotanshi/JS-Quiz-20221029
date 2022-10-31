@@ -21,6 +21,7 @@
 
     <div class="col-auto">
       <button id="search-btn" class="mb-3 btn btn-primary">搜尋</button>
+      <button id="refresh-btn" class="mb-3 btn btn-primary">刷新</button>
     </div>
   </div>
 
@@ -38,46 +39,6 @@
     
     <!-- 以下內容為示意用途，請替換掉表格資訊 -->
     <tbody>
-      <tr>
-        <td>0001</td>
-        <td>捷運市政府站(3號出口)</td>
-        <td>信義區</td>
-        <td>21</td>
-        <td>180</td>
-        <td>2022/10/29 12:00:00</td>
-      </tr>
-      <tr>
-        <td>0002</td>
-        <td>捷運國父紀念館站(2號出口)</td>
-        <td>大安區</td>
-        <td>32</td>
-        <td>48</td>
-        <td>2022/10/29 12:00:00</td>
-      </tr>
-      <tr>
-        <td>0003</td>
-        <td>台北市政府</td>
-        <td>信義區</td>
-        <td>18</td>
-        <td>40</td>
-        <td>2022/10/29 12:00:00</td>
-      </tr>
-      <tr>
-        <td>0004</td>
-        <td>市民廣場</td>
-        <td>信義區</td>
-        <td>33</td>
-        <td>60</td>
-        <td>2022/10/29 12:00:00</td>
-      </tr>
-      <tr>
-        <td>0005</td>
-        <td>興雅國中</td>
-        <td>信義區</td>
-        <td>31</td>
-        <td>60</td>
-        <td>2022/10/29 12:00:00</td>
-      </tr>
     </tbody>
 
   </table>
@@ -126,8 +87,28 @@
       return date.join("/") + ' ' + time.join(":");
     }
 
-    $.get('https://tcgbusfs.blob.core.windows.net/blobyoubike/YouBikeTP.gz',
+    function AppendOneRow(sno, sna, sarea, sbi, tot, mday) {
+        const oneRow =                
+                `<tr>
+                  <td>${sno}</td>
+                  <td>${sna}</td>
+                  <td>${sarea}</td>
+                  <td>${sbi}</td>
+                  <td>${tot}</td>
+                  <td>${timeFormat(mday)}</td>
+                </tr>`;
+        $('#you-bike-tbl > tbody').append(oneRow);
+      }
+
+    function RemoveAllRow() {
+      $('#you-bike-tbl > tbody').children().remove();
+    }
+
+    function RefreshData() {
+      $.get('https://tcgbusfs.blob.core.windows.net/blobyoubike/YouBikeTP.gz',
       function (data) {        
+        RemoveAllRow();
+
         // 將資料轉為 JSON
         const { retVal } = JSON.parse(data);
         // 將回傳值轉為陣列
@@ -135,7 +116,31 @@
 
         // 從 opendata 拿回來的資料在這裡
         console.log(stops);
+
+        // 1.
+        stops.forEach(function(el) {
+          AppendOneRow(el.sno, el.sna, el.sarea, el.sbi, el.tot, el.mday);
+        });
       });
+    }
+
+    // Search
+    $('#search-btn').on('click', function() {
+      const stopSearch = $('#stop-search').val();
+      allSnaTd = [... $('#you-bike-tbl tbody tr :nth-child(2)')];
+
+      // 2.
+      allSnaTd.forEach(function(el) {
+        if(!$(el).text().includes(stopSearch)) {
+          $(el).parent().remove();
+        }
+      });
+    });
+
+    // Refresh
+    $('#refresh-btn').on('click', RefreshData);
+
+    RefreshData();
 
   </script>
 
