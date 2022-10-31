@@ -112,7 +112,12 @@
 
   <script src="scripts/jquery-3.6.0.js"></script>
   <script>
-
+    const numAry = []
+    $('.nums').on('click',function(e){
+      numAry.push($(e.target).text())
+    //把點擊到的數字傳到陣列內，轉成字串，使用replace填寫正規表達式去除不要的逗號
+      $('#result').text(numAry.toString().replace(/,/g,""))
+    })
   </script>
 
 </body>
