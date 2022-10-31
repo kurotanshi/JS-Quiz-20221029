@@ -81,6 +81,13 @@
       // code here
       e.preventDefault();
 
+      // 1.
+      const srcLink = $(e.currentTarget).children('img').attr('src');
+      $('.main-image').children('img').attr('src', srcLink);
+
+      // 2.
+      $('.img-list').children().removeClass('active');
+      $(e.currentTarget).addClass('active');
     });
 
   </script>
