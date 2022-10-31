@@ -112,6 +112,51 @@
 
   <script src="scripts/jquery-3.6.0.js"></script>
   <script>
+    let numAryAfter = []
+    let numAryBefor = []
+    let operator = ''
+    let isTrue = true; //如果是 true 放 after, 如果是 false 放 before
+    $('.nums').on('click',function(e){
+      if(isTrue){
+        numAryAfter.push($(e.target).text())
+        $('#result').text(numAryAfter.toString().replace(/,/g,""))
+      //把點擊到的數字傳到陣列內，轉成字串，使用replace填寫正規表達式去除不要的逗號
+      }else {
+        numAryBefor.push($(e.target).text())
+        $('#result').text(numAryBefor.toString().replace(/,/g,""))
+        console.log("a", numAryAfter)
+        console.log("b", numAryBefor)
+      }
+    })
+    $('#ac').on('click',function(e){
+      $('#result').text('0')
+      numAryAfter = [];
+      numAryBefor = [];
+      isTrue = true;
+    })
+    $('.operator').on('click',function(e){
+      operator = $(e.target).text()
+      isTrue = false;
+    })
+    $('#equal').on('click',function(e){
+      const a =  Number(numAryAfter.toString().replace(/,/g,""))
+      const b = Number(numAryBefor.toString().replace(/,/g,""))
+      let equal = 0
+      if(operator==='+'){
+        equal = a + b
+      }else if (operator==='-') {
+        equal = a - b
+      }else if (operator==='×') {
+        equal = a * b
+      }else if (operator==='÷') {
+        equal = a / b
+      }
+      $('#result').text(equal)
+      numAryAfter = [];
+      numAryAfter.push(equal)
+      numAryBefor = [];
+    })
+
 
   </script>
 

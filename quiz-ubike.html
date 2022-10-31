@@ -29,7 +29,11 @@
       <tr>
         <th>#</th>
         <th>場站名稱</th>
-        <th>場站區域</th>
+        <th class="area-select">
+          <select class="area-select-el">
+            <option>場站區域</option>
+        </select>
+        </th>
         <th>目前可用車輛</th>
         <th>總停車格</th>
         <th>資料更新時間</th>
@@ -38,7 +42,7 @@
     
     <!-- 以下內容為示意用途，請替換掉表格資訊 -->
     <tbody>
-      <tr>
+      <!-- <tr>
         <td>0001</td>
         <td>捷運市政府站(3號出口)</td>
         <td>信義區</td>
@@ -77,7 +81,7 @@
         <td>31</td>
         <td>60</td>
         <td>2022/10/29 12:00:00</td>
-      </tr>
+      </tr> -->
     </tbody>
 
   </table>
@@ -125,17 +129,93 @@
       time.push(t.substr(12, 2));
       return date.join("/") + ' ' + time.join(":");
     }
-
-    $.get('https://tcgbusfs.blob.core.windows.net/blobyoubike/YouBikeTP.gz',
+    init();
+    let stops = []
+    function init(){
+      $.get('https://tcgbusfs.blob.core.windows.net/blobyoubike/YouBikeTP.gz',
       function (data) {        
         // 將資料轉為 JSON
         const { retVal } = JSON.parse(data);
         // 將回傳值轉為陣列
-        const stops = Object.keys(retVal).map(key => retVal[key]);
-
+        stops = Object.keys(retVal).map(key => retVal[key]);
         // 從 opendata 拿回來的資料在這裡
-        console.log(stops);
+        areaSelect()
+        printList();
       });
+    }
+    //印出『場站區域』的下拉選單
+    function areaSelect(){
+      const area = []
+      let str = '<option>場站區域</option>'
+      stops.forEach(function(item){
+        if(!area[item.sarea]){
+          area.push(item.sarea)
+        }
+      })
+      //去除重複的值
+      const oneArea = area.filter(function(item, index){
+        return area.indexOf(item) === index
+      })
+      oneArea.forEach(function(item){
+        str+=`<option>${item}</option>`
+      })
+      $('.area-select-el').append(str)
+    }
+    //點選『場站區域』的下拉選單後，印出相對應的列表內容
+    function selectAreaPrint(select){
+      $('tbody').html('')
+      let str = ''
+      const selectArea = stops.filter(function(item){
+        return item.sarea === select
+      })
+      selectArea.forEach(function(item){
+        str+= `<tr>
+          <td>${item.sno}</td>
+          <td>${item.sna}</td>
+          <td>${item.sarea}</td>
+          <td>${item.bemp}</td>
+          <td>${item.tot}</td>
+          <td>${timeFormat(item.mday)}</td>
+        </tr>`
+      })
+      $('tbody').append(str)
+    }
+    //印出列表
+    function printList(text){
+      let str = '';
+      let newData = []
+      if(!text){
+        newData = stops
+      } else {
+        console.log('filter')
+        newData = stops.filter(function(item){
+        return item.sna.match(text) 
+      })
+      }
+      newData.forEach(function(item){
+        str+=` <tr>
+          <td>${item.sno}</td>
+          <td>${item.sna}</td>
+          <td>${item.sarea}</td>
+          <td>${item.bemp}</td>
+          <td>${item.tot}</td>
+          <td>${timeFormat(item.mday)}</td>
+        </tr>`
+      })
+      $('tbody').append(str)
+    }
+    //搜尋功能
+    $('#search-btn').on('click',function(e){
+      const searchText = $('#stop-search').val()
+      $('tbody').html('')
+      printList(searchText)
+    })
+    //篩選功能
+    $('.area-select').on('change',function(e){
+      const selectVal = $(e.target).val()
+      selectAreaPrint(selectVal)
+    })
+    
 
   </script>
 
