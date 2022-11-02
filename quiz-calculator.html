@@ -112,7 +112,312 @@
 
   <script src="scripts/jquery-3.6.0.js"></script>
   <script>
+    const kOperatorEqual = '=';
+    const kOperatorPlus  = '+';
+    const kOperatorMinus = '-';
+    const kOperatorMul   = '×';
+    const kOperatorDiv   = '÷';
 
+    // Start
+    function StartState() {
+      return {
+        Handle(key){
+          if(!isNaN(key))
+            return NumberState(key);
+
+          console.log('[UNKNOWN] Return StartState');
+          return StartState();
+        }
+      };
+    } 
+
+    // Finish
+    function Finish(n) {
+      return {
+        Handle(key) {
+          console.log(`Result: ${n}`);
+          return StartState();
+        }
+      };
+    }
+
+    // N-N'
+    function NumberMinusNumberState(lhs, rhs) {
+      return {
+        'lhs': lhs, // TODO: DELETE
+        'rhs': rhs, // TODO: DELETE
+        Handle(key) {
+          const n = String(Number(lhs) - Number(rhs));
+          if(!isNaN(key)) {
+            return NumberMinusNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMul) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv) {
+            return NumberDivState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberMinusNumberState');
+          return NumberMinusNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // N-
+    function NumberMinusState(n) {
+      return {
+        'number': n, // TODO: DELETE
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberMinusNumberState(n, key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMul) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv) {
+            return NumberDivState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberMinusState');
+          return NumberMinusState(n);
+        }
+      };
+    }
+
+    // N+N'
+    function NumberPlusNumberState(lhs, rhs) {
+      return {
+        'lhs': lhs, // TODO: DELETE
+        'rhs': rhs, // TODO: DELETE
+        Handle(key) {
+          const n = String(Number(lhs) + Number(rhs));
+          if(!isNaN(key)) {
+            return NumberPlusNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorMul) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv) {
+            return NumberDivState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberPlusNumberState');
+          return NumberPlusNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // N+
+    function NumberPlusState(n) {
+      return {
+        'number': n, // TODO: DELETE
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberPlusNumberState(n, key);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorMul) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv) {
+            return NumberDivState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberPlusState');
+          return NumberPlusState(n);
+        }
+      };
+    }
+
+    // N*N'
+    function NumberMulNumberState(lhs, rhs) {
+      return {
+        'lhs': lhs, // TODO: DELETE
+        'rhs': rhs, // TODO: DELETE
+        Handle(key) {
+          const n = String(Number(lhs) * Number(rhs));
+          if(!isNaN(key)) {
+            return NumberMulNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorMul) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorDiv) {
+            return NumberDivState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberMulNumberState');
+          return NumberMulNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // N*
+    function NumberMulState(n) {
+      return {
+        'number': n,
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberMulNumberState(n, key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorDiv) {
+            return NumberDivState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberMulState');
+          return NumberMulState(n);
+        }
+      };
+    }
+
+    // N/N'
+    function NumberDivNumberState(lhs, rhs) {
+      return {
+        'lhs': lhs, // TODO: DELETE
+        'rhs': rhs, // TODO: DELETE
+        Handle(key) {
+          const n = String(Number(lhs) / Number(rhs));
+          if(!isNaN(key)) {
+            return NumberDivNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorDiv) {
+            return NumberDivState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMul) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberDivNumberState');
+          return NumberDivNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // N/
+    function NumberDivState(n) {
+      return {
+        'number': n,
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberDivNumberState(n, key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMul) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+        
+          console.log('[UNKNOWN] Return NumberDivState');
+          return NumberDivState(n);
+        }
+      };
+    }
+
+    // N
+    function NumberState(n) {
+      return {
+        'number': n, // TODO: DELETE
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberState(n + key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorMul) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv) {
+            return NumberDivState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberState');
+          return NumberState(n);
+        }
+      };
+    }
+
+    let state = StartState();
+    $('button').on('click', function(e) {
+      btn = $(e.target);
+      const key = btn.text();
+      $('#result').text(key);
+
+      
+      state = state.Handle(key);
+      console.log(key);
+      console.log(state);
+      
+
+      //TODO: oeprator
+      // 1. AC
+      // 2. 小數點
+      // 3. 負數
+      // 4. 顯示螢幕上
+
+      // DONE: 
+      // operator + - * /
+
+
+
+
+
+    });
   </script>
 
 </body>
