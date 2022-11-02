@@ -132,7 +132,10 @@
       // 2.
       allSnaTd.forEach(function(el) {
         if(!$(el).text().includes(stopSearch)) {
-          $(el).parent().remove();
+          $(el).parent().hide();
+        }
+        else {
+          $(el).parent().show();
         }
       });
     });
