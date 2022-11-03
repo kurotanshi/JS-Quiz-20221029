@@ -112,7 +112,201 @@
 
   <script src="scripts/jquery-3.6.0.js"></script>
   <script>
+    // 限制#result長度
+    const RESULT_MAX_LEN = 12;
+    /* 運算式
+    index 0：第一個運算元字串
+    index 1：運算子
+    index 2：第二個運算元字串
+    只會有index 0的情況：
+      (1) 初始，或按AC：內容為'0'。
+      (3) 按下=：內容為''。
+    只有index 0~1的情況：無
+    有index 0~2的情況：按下運算子，index 0為第一個數字或前一次運算結果，index 2內容為''。
+    */
+    let expression = ['0'];
 
+    // 重置
+    $('#ac').on('click', () => {
+      $('#result').text('0');
+      expression = ['0'];
+    });
+
+    /* 運算：為了避免用小數做運算會產生誤差，轉成整數做運算再換回小數
+    numString1：第一個運算元字串
+    operator：運算子
+    numString2：第二個運算元字串
+    回傳運算結果的數字
+    */
+    function Calculator(numString1, operator, numString2) {
+      let pointLength1 = numString1.includes('.') ? numString1.length - (numString1.indexOf('.') + 1) : 0;
+      let pointLength2 = numString2.includes('.') ? numString2.length - (numString2.indexOf('.') + 1) : 0;
+      let num1 = Number(numString1);
+      let num2 = Number(numString2);
+
+      let result;
+      let pointRatio;
+      if (operator === '+') {
+        pointRatio = 10 ** Math.max(pointLength1, pointLength2);
+        result = pointRatio === 0 ? (num1 + num2) : ((num1 * pointRatio) + (num2 * pointRatio)) / pointRatio;
+      }
+      else if (operator === '-') {
+        pointRatio = 10 ** Math.max(pointLength1, pointLength2);
+        result = pointRatio === 0 ? (num1 - num2) : ((num1 * pointRatio) - (num2 * pointRatio)) / pointRatio;
+      }
+      else if (operator === '×') {
+        pointRatio = 10 ** (pointLength1 + pointLength2);
+        result = pointRatio === 0 ? (num1 * num2) : (num1 * pointRatio * num2) / pointRatio;
+      }
+      else if (operator === '÷') {
+        if (pointLength1 > 0) {
+          num1 = num1 * 10 ** pointLength1;
+        }
+        if (pointLength2 > 0) {
+          num2 = num2 * 10 ** pointLength2;
+        }
+        result = num1 / num2;
+        let tmpResultStr = String(result);
+        let tmpPointLen = tmpResultStr.includes('.') ? tmpResultStr.length - (tmpResultStr.indexOf('.') + 1) : 0;
+        result = result * (10 ** tmpPointLen);
+        console.log(result);
+        console.log((pointLength1 - pointLength2 + tmpPointLen));
+        pointRatio = 10 ** (pointLength1 - pointLength2 + tmpPointLen);
+        result = result / (10 ** (pointLength1 - pointLength2 + tmpPointLen));
+      }
+      
+      return result;
+    }
+
+    /* 為數字加上千分位
+    numString：數字的字串
+    */
+    function FormatThousandth(numString) {
+      let formatString;
+      let posLastNum;
+      if (numString.includes('.')) {
+        posLastNum = numString.indexOf('.');
+        formatString = numString.substring(posLastNum);
+      }
+      else {
+        formatString = '';
+        posLastNum = numString.length;
+      }
+      for (i = posLastNum; i > 0; i = i-3)
+      {
+        let tmp = numString.substring(i-3, i);
+        formatString = tmp + formatString;
+        if (tmp.length === 3 && (i-3) > 0) {
+          formatString = ',' + formatString;
+        }
+      }
+      return formatString;
+    }
+
+    /* 閃一下目前的值，讓使用者知道有按到
+    isDisabledInput：是否提示使用者無法輸入 (閃爍時間較短)
+    */
+    function flashCurrentValue(isDisabledInput) {
+      let timeout = isDisabledInput ? 20 : 40;
+      let currentResult = $('#result').text();
+      $('#result').text('');
+      window.setTimeout(() => {
+        $('#result').text(currentResult);
+      }, timeout);
+    };
+
+    /* 閃一下顯示運算的結果
+    isKeepResult：是否要將運算結果保留到第一個運算元
+    */
+    function flashCalculatorResult(isKeepResult) {
+      // 進行運算
+      let resultNum = Calculator(expression[0], expression[1], expression[2]);
+      // 檢查運算結果
+      let resultString;
+      let alertMsg = '';
+      if (resultNum === Infinity || resultNum === -Infinity) {
+        resultString = '0';
+        alertMsg = '無效的運算';
+      }
+      else {
+        resultString = String(resultNum);
+      }
+      if (resultString.length > RESULT_MAX_LEN) {
+        let integerLength = resultString.indexOf('.');
+        if (integerLength > RESULT_MAX_LEN) {
+          alertMsg = '運算結果過大，無法顯示\n結果為'+resultString;
+          resultString = '0';
+        }
+        else {
+          resultString = resultString.substring(0, 13);
+        }
+      }
+      // 記錄與顯示結果
+      expression = isKeepResult ? [resultString] : [''];
+      $('#result').text('');
+      window.setTimeout(() => {
+        $('#result').text(FormatThousandth(resultString));
+      }, 40);
+      if (alertMsg !== '') {
+        alert(alertMsg);
+      }
+    };
+
+    // 按數字
+    $('.nums').on('click', e => {
+      let currentResult = expression[expression.length - 1];
+      if (currentResult.replace('.','').length === RESULT_MAX_LEN) {
+        flashCurrentValue(true);
+        return;
+      }
+      let addNum = $(e.currentTarget).text();
+      if ((addNum === '0' && currentResult === '0') || (addNum === '.' && currentResult.includes('.'))) {
+        flashCurrentValue(true);
+        return;
+      }
+      else if (currentResult === '' && addNum === '.') {
+        currentResult = '0.';
+      }
+      else if (currentResult === '0' && addNum !== '.') {
+        currentResult = addNum;
+      }
+      else {
+        currentResult = currentResult + addNum;
+      }
+      $('#result').text(FormatThousandth(currentResult));
+      expression[expression.length - 1] = currentResult;
+    });
+
+    // 按=
+    $('#equal').on('click', () => {
+      if (expression.length === 1) {
+        flashCurrentValue(false);
+      }
+      else {
+        flashCalculatorResult(false);
+      }
+    });
+
+    // 按運算子
+    $('.operator').on('click', e => {
+      if (expression.length === 1) {
+        if (expression[0] === '') {
+          expression[0] = $('#result').text();
+        }
+        expression.push($(e.currentTarget).text());
+        expression.push('');
+        flashCurrentValue(false);
+      }
+      else if (expression[2] === '') {
+        // 按了運算子之後沒有按任何數字，又按了運算子 => 變更運算子
+        expression[1] = $(e.currentTarget).text();
+        flashCurrentValue(false);
+      }
+      else {
+        flashCalculatorResult(true);
+      }
+    });
+    
   </script>
 
 </body>
