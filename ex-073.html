@@ -81,6 +81,10 @@
       // code here
       e.preventDefault();
 
+      $('.main-image > img').attr('src', $(e.currentTarget).children('img').attr('src'));
+
+      $('.img-list > .active').removeClass('active');
+      $(e.currentTarget).addClass('active');
     });
 
   </script>
