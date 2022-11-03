@@ -28,6 +28,16 @@
       color: #3c3c3c;
     }
 
+    #tmpResult {
+      width: 400px;
+      height: 7px;
+      margin-bottom: 20px;
+      text-align: right;
+      font-family: sans-serif;
+      font-size: 15px;
+      color: #3c3c3c;
+    }
+
     .row-btn {
       display: flex;
       justify-content: space-between;
@@ -54,6 +64,10 @@
     .nums {
       background: #FFFFFF;
     }
+    
+    .highlight {
+      background: #ef9191;
+    }
 
     #equal {
       width: 196px;
@@ -72,7 +86,7 @@
   <div class="wrapper">
 
     <div id="result">0</div>
-
+    <div id="tmpResult"></div>
     <div class="btn-pad">
 
       <div class="row-btn">
@@ -112,6 +126,622 @@
 
   <script src="scripts/jquery-3.6.0.js"></script>
   <script>
+    const kOperatorEqual = '=';
+    const kOperatorPlus  = '+';
+    const kOperatorMinus = '-';
+    const kOperatorMul1  = '×';
+    const kOperatorMul2  = '*';
+    const kOperatorDiv1  = '÷';
+    const kOperatorDiv2  = '/';
+    const kDot           = '.';
+    const kAC            = 'AC';
+
+    // Start
+    function StartState(n) {
+      return {
+        result() {
+          return n;
+        },
+        tempResult() {
+          return '';
+        },
+        Handle(key){
+          if(!isNaN(key)) {
+            return NumberState(key);
+          }
+          else if(key === kOperatorMinus) {
+            return NegativeNumberState(n);
+          }
+
+          console.log('[UNKNOWN] Return StartState');
+          return StartState(n);
+        }
+      };
+    }
+
+    // TODO: DELETE, use Start instead
+    // Finish
+    function Finish(n) {
+      return {
+        Handle(key) {
+          console.log(`Result: ${n}`); // TODO: DELETE
+          return StartState(n);
+        }
+      };
+    }
+
+    // N
+    function NumberState(n) {
+      return {
+        result() {
+          return n;
+        },
+        tempResult() {
+          return '';
+        },
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberState(n + key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle();
+          }
+          else if(key === kDot) {
+            return NumberDotState(n + key);
+          }
+
+          console.log('[UNKNOWN] Return NumberState');
+          return NumberState(n);
+        }
+      };
+    }
+
+    // N.
+    function NumberDotState(n) {
+      return {
+        result() {
+          return n;
+        },
+        tempResult() {
+          return '';
+        },
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberDotNumberState(n + key);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(Number(n)).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return NumberDotState');
+          return NumberDotState(n);
+        }
+      };
+    }
+
+    // N.N
+    function NumberDotNumberState(n) {
+      return {
+        result() {
+          return n;
+        },
+        tempResult() {
+          return '';
+        },
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberDotNumberState(n + key);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(Number(n)).Handle('');
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+
+          console.log('[UNKNOWN] Return NumberDotNumberState');
+          return NumberDotNumberState(n);
+        }
+      };
+    }
+
+    // /.N
+    function DivDotNumberState(lhs, rhs) {
+      return {
+        result() {
+          return rhs;
+        },
+        tempResult() {
+          return lhs;
+        },
+        Handle(key) {
+          const n = String(Number(lhs) / Number(rhs));
+          if(!isNaN(key)) {
+            return NumberDivNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return DivDotNumberState');
+          return DivDotNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // *.N
+    function MulDotNumberState(lhs, rhs) {
+      return {
+        result() {
+          return rhs;
+        },
+        tempResult() {
+          return lhs;
+        },
+        Handle(key) {
+          const n = String(Number(lhs) * Number(rhs));
+          if(!isNaN(key)) {
+            return NumberMulNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return MulDotNumberState');
+          return MulDotNumberState(lhs, rhs);
+        }
+      };
+    }
+    
+    // -.N
+    function MinusDotNumberState(lhs, rhs) {
+      return {
+        result() {
+          return rhs;
+        },
+        tempResult() {
+          return lhs;
+        },
+        Handle(key) {
+          const n = String(Number(lhs) - Number(rhs));
+          if(!isNaN(key)) {
+            return NumberMinusNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return MinusDotNumberState');
+          return MinusDotNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // +.N
+    function PlusDotNumberState(lhs, rhs) {
+      return {
+        result() {
+          return rhs;
+        },
+        tempResult() {
+          return lhs;
+        },
+        Handle(key) {
+          const n = String(Number(lhs) + Number(rhs));
+          if(!isNaN(key)) {
+            return NumberPlusNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return PlusDotNumberState');
+          return PlusDotNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // -N
+    function NegativeNumberState(n) {
+      return {
+        result() {
+          return '-';
+        },
+        tempResult() {
+          return '';
+        },
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberState('-' + key);
+          }
+          else if(key === kOperatorMinus) {
+            return NegativeNumberState(n);
+          }
+
+          console.log('[UNKNOWN] Return StartState');
+          return StartState(n);
+        }
+      };
+    }
+
+    // N-N'
+    function NumberMinusNumberState(lhs, rhs) {
+      return {
+        result() {
+          return rhs;
+        },
+        tempResult() {
+          return lhs;
+        },
+        Handle(key) {
+          const n = String(Number(lhs) - Number(rhs));
+          if(!isNaN(key)) {
+            return NumberMinusNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+          else if(key === kDot) {
+            return MinusDotNumberState(lhs, rhs+key);
+          }
+
+          console.log('[UNKNOWN] Return NumberMinusNumberState');
+          return NumberMinusNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // N-
+    function NumberMinusState(n) {
+      return {
+        result() {
+          return "";
+        },
+        tempResult() {
+          return n;
+        },
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberMinusNumberState(n, key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return NumberMinusState');
+          return NumberMinusState(n);
+        }
+      };
+    }
+
+    // N+N'
+    function NumberPlusNumberState(lhs, rhs) {
+      return {
+        result() {
+          return rhs;
+        },
+        tempResult() {
+          return lhs;
+        },
+        Handle(key) {
+          const n = String(Number(lhs) + Number(rhs));
+          if(!isNaN(key)) {
+            return NumberPlusNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+          else if(key === kDot) {
+            return PlusDotNumberState(lhs, rhs+key);
+          }
+
+          console.log('[UNKNOWN] Return NumberPlusNumberState');
+          return NumberPlusNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // N+
+    function NumberPlusState(n) {
+      return {
+        result() {
+          return "";
+        },
+        tempResult() {
+          return n;
+        },
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberPlusNumberState(n, key);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return NumberPlusState');
+          return NumberPlusState(n);
+        }
+      };
+    }
+
+    // N*N'
+    function NumberMulNumberState(lhs, rhs) {
+      return {
+        result() {
+          return rhs;
+        },
+        tempResult() {
+          return lhs;
+        },
+        Handle(key) {
+          const n = String(Number(lhs) * Number(rhs));
+          if(!isNaN(key)) {
+            return NumberMulNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+          else if(key === kDot) {
+            return MulDotNumberState(lhs, rhs+key);
+          }
+
+          console.log('[UNKNOWN] Return NumberMulNumberState');
+          return NumberMulNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // N*
+    function NumberMulState(n) {
+      return {
+        result() {
+          return "";
+        },
+        tempResult() {
+          return n;
+        },
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberMulNumberState(n, key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return NumberMulState');
+          return NumberMulState(n);
+        }
+      };
+    }
+
+    // N/N'
+    function NumberDivNumberState(lhs, rhs) {
+      return {
+        result() {
+          return rhs;
+        },
+        tempResult() {
+          return lhs;
+        },
+        Handle(key) {
+          const n = String(Number(lhs) / Number(rhs));
+          if(!isNaN(key)) {
+            return NumberDivNumberState(lhs, rhs+key);
+          }
+          else if(key === kOperatorDiv1 || key === kOperatorDiv2) {
+            return NumberDivState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kDot) {
+            return DivDotNumberState(lhs, rhs+key);
+          }
+
+          console.log('[UNKNOWN] Return NumberDivNumberState');
+          return NumberDivNumberState(lhs, rhs);
+        }
+      };
+    }
+
+    // N/
+    function NumberDivState(n) {
+      return {
+        result() {
+          return "";
+        },
+        tempResult() {
+          return n;
+        },
+        Handle(key) {
+          if(!isNaN(key)) {
+            return NumberDivNumberState(n, key);
+          }
+          else if(key === kOperatorPlus) {
+            return NumberPlusState(n);
+          }
+          else if(key === kOperatorMul1 || key === kOperatorMul2) {
+            return NumberMulState(n);
+          }
+          else if(key === kOperatorMinus) {
+            return NumberMinusState(n);
+          }
+          else if(key === kOperatorEqual) {
+            return Finish(n).Handle('');
+          }
+
+          console.log('[UNKNOWN] Return NumberDivState');
+          return NumberDivState(n);
+        }
+      };
+    }
+
+    function ShowResult(str) {
+      $('#result').text(str);
+    }
+
+    function ShowTempResult(str) {
+      $('#tmpResult').text(str);
+    }
+
+    function StateTransfer(key) {
+      state = state.Handle(key);
+      ShowResult(state.result());
+      ShowTempResult(state.tempResult());
+    }
+
+    function KeyDownHighligh(e, key) {
+      const buttonList = [... $(e.target).find('button')];
+      buttonList.forEach(function(el, idx) {
+        const calKey = $(el).text();
+        if(key === calKey) {
+          $(buttonList[idx]).addClass('highlight');
+        }
+        else if(key === kOperatorMul2) {
+          $(buttonList[5]).addClass('highlight');
+        }
+        else if(key === kOperatorDiv2) {
+          $(buttonList[1]).addClass('highlight');
+        }
+      });
+    }
+
+    // Main events
+    let state = StartState(0);
+    $('button').on('mousedown', function(e) {
+      const key = $(e.target).text();
+  
+      // Highlight
+      $(e.target).addClass('highlight');
+
+      // Reset state and clear screen
+      if(key === kAC) {
+        ShowResult('');
+        ShowTempResult('');
+        state = StartState(0);
+        return;
+      }
+
+      StateTransfer(key);
+    });
+
+    $('button').on('mouseup', function(e) {
+      // Remove highlight
+      $(e.target).removeClass('highlight');
+    });
+
+    $('body').on('keydown', function(e) {
+      const key = e.key;
+      if(!isNaN(key) 
+      || key === kOperatorEqual 
+      || key === kOperatorPlus
+      || key === kOperatorMinus
+      || key === kDot
+      || key === kOperatorMul2
+      || key === kOperatorDiv2) {
+        // Highlight
+        KeyDownHighligh(e, key);
+        StateTransfer(key);
+      }
+    });
+
+    $('body').on('keyup', function(e) {
+      // Remove highlight
+      $(e.target).find('button').removeClass('highlight');
+    });
 
   </script>
 
