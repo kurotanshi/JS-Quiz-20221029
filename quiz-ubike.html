@@ -112,8 +112,9 @@
       bemp：空位數量
       act：全站禁用狀態
     */
-
-    // 時間格式處理
+    
+    
+// 時間格式處理
     const timeFormat = function (t) {
       const date = [], time = [];
 
@@ -126,8 +127,25 @@
       return date.join("/") + ' ' + time.join(":");
     }
 
+
+    function Youbike(sno,sna,sarea,sbi,tot,mday){
+      $('#you-bike-tbl > tbody').append(`
+        <tr>
+        <th>${'#sno'}</th>
+        <th>${'#sna'}</th>
+        <th>${'#sarea'}</th>
+        <th>${'#sbi'}</th>
+        <th>${'#tot'}</th>
+        <th>${timeFormat(mday)}</th>
+      </tr>
+    `);
+  }
+
+
+    function refresh(){ 
     $.get('https://tcgbusfs.blob.core.windows.net/blobyoubike/YouBikeTP.gz',
-      function (data) {        
+      function (data) {     
+        $('tbody').empty();  
         // 將資料轉為 JSON
         const { retVal } = JSON.parse(data);
         // 將回傳值轉為陣列
@@ -135,7 +153,18 @@
 
         // 從 opendata 拿回來的資料在這裡
         console.log(stops);
+
+        stop.forEach(function(e){
+          Youbike(e.sno,e.sna,e.sarea,e.sbi,e.tot,e.mday);
+        });
       });
+    }
+
+    $('#search-btn').on('click', e =>{
+      const search = $(e.target).val();
+  })
+
+ 
 
   </script>
 
