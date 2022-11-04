@@ -77,9 +77,13 @@
     // 1. 點擊 img 區塊時，將大圖的 src 網址，換成小圖的 src 網址。
     // 2. 更換 avtice 這個 class 的擁有者。
 
-    $('.img-list > a').on('click', function (e) {
+     $('.img-list > a').on('click', function (e) {
       // code here
       e.preventDefault();
+
+      $('.main-image > img').attr('src',  $(e.currentTarget).children('img').attr('src'));
+      $('.img-list .active').removeClass('active');
+      $(e.currentTarget).addClass('active');
 
     });
 
